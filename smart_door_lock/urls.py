@@ -20,6 +20,6 @@ from django.urls import include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include('lock.urls')),
+    path("lock/", include('lock.urls')),
     
 ]
