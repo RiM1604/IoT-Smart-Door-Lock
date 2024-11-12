@@ -40,7 +40,7 @@ MQTT_FEED = os.getenv("MQTT_FEED")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1']
+ALLOWED_HOSTS = ['localhost','127.0.0.1', 'iot-smart-door-lock.onrender.com']
 
 
 # Application definition
