@@ -1,8 +1,0 @@
-<h1>Update Restricted Times</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save</button>
-</form>
-
-<a href="{% url 'admin_dashboard' %}">Back to Dashboard</a>

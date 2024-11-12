@@ -1,36 +1,31 @@
 # lock/views.py
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from .models import UserProfile, AccessLog, AdminSettings
+from .models import  AccessLog, AdminSettings
 from .forms import UserRegistrationForm
 from django.utils import timezone
-from datetime import time
 import paho.mqtt.client as mqtt
-import face_recognition
-import pickle
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth import logout
-from django.contrib.auth.decorators import user_passes_test
 from .models import AdminSettings
-from .forms import AdminSettingsForm
 import json
 from django.utils.dateparse import parse_time
+import requests
+from django.conf import settings
+
+
 
 
 # Adafruit IO MQTT configuration
-MQTT_USERNAME = 'ready1234'
-MQTT_KEY = 'aio_HniG45Ov5Vgf5V2TA3KrKIUjLjXT'
-MQTT_FEED = f'{MQTT_USERNAME}/feeds/lock'
 client = mqtt.Client()
 
-client.username_pw_set(MQTT_USERNAME, MQTT_KEY)
+client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_KEY)
 client.connect("io.adafruit.com", 1883, 60)
 client.loop_start()
 
 def publish_lock_command(command):
-    client.publish(MQTT_FEED, command)
+    client.publish(settings.MQTT_FEED, command)
 
 def register_user(request):
     if request.user.is_superuser:
@@ -43,8 +38,10 @@ def register_user(request):
                 
                 return redirect('account_login')
             else:   
+
+                error_message = "\n".join([f"{field}: {', '.join(errors)}" for field, errors in form.errors.items()])
                 message = "Form information not valid!"
-                return render(request, 'lock/user_login.html', {'message':message})
+                return render(request, 'lock/user_login.html', {'message':error_message})
 
         else:
             form = UserRegistrationForm()
@@ -94,21 +91,21 @@ def user_dashboard(request):
 
 @login_required
 def unlock_door(request):
-    now = timezone.now().time()
+    now = timezone.localtime().time()
     
     # Get the admin settings, and handle the case when it doesn't exist
     admin_settings = AdminSettings.objects.first()
     if admin_settings is None:
         # Handle the case where there are no admin settings
         publish_lock_command("OFF")
-        AccessLog.objects.create(user=request.user, action="unlock")
+        AccessLog.objects.create(user=request.user, action="unlock", timestamp=now)
         return JsonResponse({"message": "Door unlocked"})
     
     # Check if the user is a superuser or if the current time is outside the restricted window
     if request.user.is_superuser or not (admin_settings.restricted_start <= now <= admin_settings.restricted_end):
         # Publish the unlock command and log the action
         publish_lock_command("OFF")
-        AccessLog.objects.create(user=request.user, action="unlock")
+        AccessLog.objects.create(user=request.user, action="unlock", timestamp=now)
         return JsonResponse({"message": "Door unlocked"})
     
     # If access is restricted
@@ -124,7 +121,8 @@ def account_logout(request):
 @login_required
 def lock_door(request):
     publish_lock_command("ON")
-    AccessLog.objects.create(user=request.user, action="lock")
+    current_time = timezone.localtime()
+    AccessLog.objects.create(user=request.user, action="lock", timestamp=current_time)
     return JsonResponse({"message": "Door locked"})
 
 # views for enabling the admin to create a restricted time.
@@ -151,7 +149,7 @@ def access_logs_view(request):
                     "username": log.user.username
                 },
                 "action": log.action,
-                "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": timezone.localtime(log.timestamp).strftime("%b. %d, %Y, %I:%M %p").title()
             }
             for log in access_logs
         ]
@@ -204,17 +202,49 @@ def add_restriction(request):
 
 
 
+
 @login_required
 def lock_status(request):
-    # Get the latest action from the AccessLog to determine lock status
-    latest_log = AccessLog.objects.filter(action__in=["lock", "unlock"]).order_by('-timestamp').first()
-    
-    # Determine lock status based on the latest log entry
-    if latest_log and latest_log.action == "lock":
-        status = "Locked"
-    elif latest_log and latest_log.action == "unlock":
-        status = "Unlocked"
-    else:
-        status = "Unknown"  # Default when no log entry exists
+    # Adafruit IO URL for the lock feed
+    adafruit_url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/lock/data/last"
+
+    # Fetch the latest feed data from Adafruit IO
+    try:
+        response = requests.get(
+            adafruit_url,
+            headers={"X-AIO-Key": settings.MQTT_KEY}
+        )
+        response.raise_for_status()  # Raise an error for bad responses
+
+        # Parse the response JSON
+        feed_data = response.json()
+        feed_value = feed_data.get("value", "").upper()  # Expecting "ON" or "OFF"
+
+        # Determine lock status based on the feed value
+        if feed_value == "ON":
+            status = "Locked"
+        elif feed_value == "OFF":
+            status = "Unlocked"
+        else:
+            status = "Unknown"  # Default when the feed value is unrecognized
+
+    except requests.RequestException as e:
+        # Handle any request-related errors
+        print("Error fetching data from Adafruit IO:", e)
+        status = "Error"  # Indicate an error status
 
     return JsonResponse({"status": status})
+
+@login_required
+def rfid_access(request):
+    # Fetch the latest messages from Adafruit IO's rfidaccess feed
+    url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/rfidaccess/data"
+    headers = {"X-AIO-Key": settings.MQTT_KEY}
+    response = requests.get(url, headers=headers)
+    
+    rfid_data = response.json() if response.status_code == 200 else []
+    
+    # Render the page and pass the fetched data to the template
+    return render(request, 'lock/rfid_access.html', {
+        'rfid_data': rfid_data,
+    })
