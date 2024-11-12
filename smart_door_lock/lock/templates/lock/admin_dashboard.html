@@ -1,90 +1,342 @@
-<h1>Admin Dashboard</h1>
+<style>
+    /* Reset margins and paddings for a consistent layout */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f6f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        height: 100vh;
+        overflow-x: hidden;
+    }
 
-<h2 id="lock-status">Status: Loading...</h2>
-<button onclick="lockDoor()">Lock Door</button>
-<button onclick="unlockDoor()">Unlock Door</button>
+    header {
+        background-color: #2d3e50;
+        width: 100%;
+        padding: 15px 20px;
+        color: white;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
 
+    .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-<h2>Access Logs</h2>
-<table id="access-logs-table">
-    <tr>
-        <th>User</th>
-        <th>Action</th>
-        <th>Timestamp</th>
-    </tr>
-    {% for log in access_logs %}
-    <tr>
-        <td>{{ log.user.username }}</td>
-        <td>{{ log.action }}</td>
-        <td>{{ log.timestamp }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="3" style="text-align: center;">No Access.</td>
-    </tr>
-    {% endfor %}
-</table>
+    .navbar h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 500;
+    }
 
-<h2>Current Restrictions</h2>
-<table>
-    <tr>
-        <th>Start Time</th>
-        <th>End Time</th>
-        <th>Actions</th>
-    </tr>
-    {% for restriction in restrictions %}
-    <tr>
-        <td>
-            <input type="time" value="{{ restriction.restricted_start|date:"H:i" }}" id="start_{{ restriction.id }}" disabled>
-        </td>
-        <td>
-            <input type="time" value="{{ restriction.restricted_end|date:"H:i" }}" id="end_{{ restriction.id }}" disabled>
-        </td>
-        <td>
-            <button onclick="enableEdit({{ restriction.id }})" id="edit_btn_{{ restriction.id }}">Edit</button>
-            <button onclick="saveEdit({{ restriction.id }})" id="save_btn_{{ restriction.id }}" style="display:none;">Save</button>
-            <button onclick="removeRestriction({{ restriction.id }})" class="remove_btn">Remove</button>
-        </td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="3" style="text-align: center;">No restrictions available.</td>
-    </tr>
-    {% endfor %}
-    
-</table>
+    .logout-button {
+        background-color: #2d3e50;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-size: 1rem;
+    }
 
+    .logout-button:hover {
+        background-color: #1d2b38;
+    }
 
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        margin-top: 20px;
+        text-align: left;
+        width: 100%;
+        max-width: 1200px;
+    }
 
-<button onclick="showAddForm()" class="button">Add New Restriction</button>
+    .table-container {
+        width: 100%;
+        max-width: 1200px;
+        margin-top: 20px;
+        padding: 0 20px;
+        overflow-x: auto;
+    }
 
-<div id="addForm" style="display:none; margin-top: 20px;">
-    <label for="new_start">Start Time:</label>
-    <input type="time" id="new_start" required>
-    
-    <label for="new_end">End Time:</label>
-    <input type="time" id="new_end" required>
-    
-    <button onclick="addRestriction()">Add</button>
-    <button onclick="hideAddForm()">Cancel</button>
-</div>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        margin-top: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
 
-<div class="logout-section">
-    <a href="{% url 'account_logout' %}">Logout</a>
-</div>
-<div class="logout-section">
-    <a href="{% url 'register_user' %}">Register User</a>
-</div>
+    table th,
+    table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    table th {
+        background-color: #2d3e50;
+        color: white;
+    }
+
+    table td {
+        color: #333;
+    }
+
+    button {
+        padding: 8px 16px;
+        background-color: #2d3e50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-size: 1rem;
+        margin: 5px 0;
+    }
+
+    button:hover {
+        background-color: #1d2b38;
+    }
+
+    .logout-section {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .logout-section a {
+        font-size: 1rem;
+        color: #2d3e50;
+        text-decoration: none;
+    }
+
+    .logout-section a:hover {
+        text-decoration: underline;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: flex-start;
+        width: 100%;
+        max-width: 1200px;
+        margin-top: 20px;
+        padding: 0 20px;
+    }
+
+    .button-container button {
+        margin-right: 15px;
+    }
+
+    .form-container {
+        display: flex;
+        flex-direction: column;
+        margin-top: 20px;
+        width: 100%;
+        max-width: 1200px;
+        padding: 0 20px;
+    }
+
+    .form-container label {
+        margin-bottom: 5px;
+        font-size: 1rem;
+    }
+
+    .form-container input {
+        padding: 10px;
+        font-size: 1rem;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .centered {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Media Queries for Responsiveness */
+    @media (max-width: 768px) {
+        .navbar h1 {
+            font-size: 1.5rem;
+        }
+
+        .table-container {
+            width: 100%;
+            padding: 0 10px;
+        }
+
+        .table th, .table td {
+            font-size: 0.9rem;
+        }
+
+        .form-container {
+            padding: 0 10px;
+        }
+
+        button {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .navbar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .navbar h1 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .logout-button {
+            margin-top: 10px;
+        }
+
+        .table-container {
+            padding: 0 5px;
+        }
+
+        .table th, .table td {
+            font-size: 0.85rem;
+        }
+
+        .form-container input {
+            font-size: 0.9rem;
+        }
+
+        button {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+        }
+    }
+</style>
+
+<header>
+    <div class="navbar">
+        <h1>Admin Dashboard</h1>
+        <button class="logout-button" onclick="location.href='{% url 'account_logout' %}'">Logout</button>
+    </div>
+</header>
+
+<section class="centered">
+    <div class="button-container">
+        <button onclick="lockDoor()">Lock Door</button>
+        <button onclick="unlockDoor()">Unlock Door</button>
+    </div>
+    <h2 id="lock-status">Status: Loading...</h2>
+</section>
+
+<section class="table-container">
+    <h2 class="section-title">Access Logs</h2>
+    <table id="access-logs-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in access_logs %}
+            <tr>
+                <td>{{ log.user.username }}</td>
+                <td>{{ log.action }}</td>
+                <td>{{ log.timestamp }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center;">No Access.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="table-container">
+    <h2 class="section-title">Current Restrictions</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for restriction in restrictions %}
+            <tr>
+                <td>
+                    <input type="time" value="{{ restriction.restricted_start|date:"H:i" }}" id="start_{{ restriction.id }}" disabled>
+                </td>
+                <td>
+                    <input type="time" value="{{ restriction.restricted_end|date:"H:i" }}" id="end_{{ restriction.id }}" disabled>
+                </td>
+                <td>
+                    <button onclick="enableEdit({{ restriction.id }})" id="edit_btn_{{ restriction.id }}">Edit</button>
+                    <button onclick="saveEdit({{ restriction.id }})" id="save_btn_{{ restriction.id }}" class="hidden">Save</button>
+                    <button onclick="removeRestriction({{ restriction.id }})" class="remove_btn">Remove</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center;">No restrictions available.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="form-container">
+    <button onclick="showAddForm()" class="button" id="add_new_restriction">Add New Restriction</button>
+
+    <div id="addForm" class="hidden">
+        <label for="new_start">Start Time:</label>
+        <input type="time" id="new_start" required>
+        
+        <label for="new_end">End Time:</label>
+        <input type="time" id="new_end" required>
+        
+        <button onclick="addRestriction()">Add</button>
+        <button onclick="hideAddForm()">Cancel</button>
+    </div>
+</section>
+
+<section class="logout-section">
+    <button onclick="location.href='{% url 'register_user' %}'">Register New User</button>
+    <button onclick="location.href='{% url 'rfid_access' %}'">RFID Access</button>
+</section>
 
 
 <script>
 function showAddForm() {
     document.getElementById("addForm").style.display = "block";
+    document.getElementById("add_new_restriction").style.display = "none";
+
 }
 
 function hideAddForm() {
     document.getElementById("addForm").style.display = "none";
+    document.getElementById("add_new_restriction").style.display = "inline";
 }
 
 function enableEdit(id) {
@@ -250,6 +502,17 @@ function updateAccessLogs() {
         `;
         data.access_logs.forEach(log => {
             const row = document.createElement("tr");
+
+            const timestamp = new Date(log.timestamp).toLocaleString('en-GB', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
             row.innerHTML = `
                 <td>${log.user.username}</td>
                 <td>${log.action}</td>

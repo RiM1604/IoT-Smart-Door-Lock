@@ -15,4 +15,5 @@ urlpatterns = [
     path('admin_dashboard/add/',views.add_restriction, name='add_restriction'),
     path('access_logs/', views.access_logs_view, name='access_logs'),
     path('status/', views.lock_status, name='lock_status'),
+    path('rfid_access/', views.rfid_access, name='rfid_access'),
 ]

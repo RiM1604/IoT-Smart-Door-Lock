@@ -1,0 +1,123 @@
+<style>
+    /* Basic Reset */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f6f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .container {
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        width: 100%;
+    }
+
+    h1 {
+        font-size: 2rem;
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Scrollable data container */
+    #rfid-data-container {
+        max-height: 300px; /* Set a maximum height for scrollability */
+        overflow-y: auto;
+        margin-bottom: 20px;
+        padding-right: 10px; /* Space for scrollbar */
+    }
+
+    .entry {
+        background-color: #f9f9f9;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #0073e6;
+        border-radius: 4px;
+    }
+
+    .entry p {
+        color: #555;
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .entry strong {
+        color: #333;
+    }
+
+    .back-button {
+        display: inline-block;
+        width: 100%;
+        padding: 12px;
+        background-color: #0073e6;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-align: center;
+        transition: background-color 0.3s;
+    }
+
+    .back-button:hover {
+        background-color: #005bb5;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .container {
+            padding: 30px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+        }
+
+        .entry p {
+            font-size: 0.95rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container {
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        .entry p {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<div class="container">
+    <h1>RFID Access Logs</h1>
+    <div id="rfid-data-container">
+        {% if rfid_data %}
+            {% for entry in rfid_data %}
+                <div class="entry">
+                    <p><strong>Time:</strong> {{ entry.created_at }}<br><strong>Data:</strong> RFID Tag{{ entry.value }} used for Access</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No data available from Adafruit IO.</p>
+        {% endif %}
+    </div>
+    <button class="back-button" onclick="location.href='{% url 'admin_dashboard' %}'">Back</button>
+</div>

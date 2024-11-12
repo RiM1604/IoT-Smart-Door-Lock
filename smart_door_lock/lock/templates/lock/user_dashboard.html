@@ -1,30 +1,156 @@
-<script>
-function sendLockRequest(action) {
-    fetch(`/lock/${action}/`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token }}"
-        },
-        body: JSON.stringify({})
-    })
-    .then(response => response.json())
-    .then(data => {
-        const messageElement = document.getElementById("statusMessage");
-        if (data.error) {
-            messageElement.textContent = data.error;
-            messageElement.classList.add("error");
-        } else {
-            messageElement.textContent = data.message;
-            messageElement.classList.remove("error");
-        }
-    })
-    .catch(error => console.error("Error:", error));
+
+<style>
+    /* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-</script>
 
+/* Main body styles */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f7f7f7;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
 
+/* Dashboard container */
+.dashboard-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 700px;
+    padding: 25px;
+    text-align: center;
+}
 
+/* Heading */
+h2 {
+    font-size: 2rem;
+    color: #2d3e50;
+    margin-bottom: 30px;
+}
+
+/* Control section styling */
+.control-section {
+    margin-bottom: 30px;
+}
+
+.control-section h3 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+    color: #2d3e50;
+}
+
+/* Button styling */
+.control-btn {
+    background-color: #2d3e50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    margin: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.control-btn:hover {
+    background-color: #1d2b38;
+}
+
+/* Status message */
+.status-message {
+    margin-top: 15px;
+    font-size: 1rem;
+    color: #e74c3c;
+    display: none;
+}
+
+.status-message.success {
+    color: #27ae60;
+}
+
+.status-message.error {
+    color: #e74c3c;
+}
+
+/* Logout section styling */
+.logout-section {
+    margin-top: 20px;
+}
+
+.logout-btn {
+    background-color: #f1f1f1;
+    color: #333;
+    text-decoration: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-size: 1rem;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.logout-btn:hover {
+    background-color: #e2e2e2;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 20px;
+    }
+
+    h2 {
+        font-size: 1.8rem;
+    }
+
+    .control-btn {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+
+    .status-message {
+        font-size: 0.9rem;
+    }
+
+    .logout-btn {
+        font-size: 0.9rem;
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-container {
+        padding: 15px;
+        width: 90%;
+    }
+
+    h2 {
+        font-size: 1.6rem;
+    }
+
+    .control-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+
+    .status-message {
+        font-size: 0.9rem;
+    }
+
+    .logout-btn {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+    }
+}
+</style>
 
 <div class="dashboard-container">
     <h2>Welcome, {{ user.username }}</h2>
@@ -32,14 +158,78 @@ function sendLockRequest(action) {
     <!-- Door control section -->
     <div class="control-section">
         <h3>Door Control</h3>
-        <button onclick="sendLockRequest('unlock_door')">Unlock Door</button>
-        <button onclick="sendLockRequest('lock_door')">Lock Door</button>
-        <p id="statusMessage"></p>
+        <button class="control-btn" onclick="sendLockRequest('unlock_door')">Unlock Door</button>
+        <button class="control-btn" onclick="sendLockRequest('lock_door')">Lock Door</button>
+        <p id="statusMessage" class="status-message"></p>
     </div>
     
     <!-- Logout option -->
     <div class="logout-section">
-        <a href="{% url 'account_logout' %}">Logout</a>
+        <a href="{% url 'account_logout' %}" class="logout-btn">Logout</a>
     </div>
 </div>
 
+<script>
+    // Fetches the current lock status from Adafruit IO
+    function getLockStatus() {
+        return fetch(`/lock/status/`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+        .then(response => response.json())
+        .then(data => data.status)
+        .catch(error => {
+            console.error("Error fetching lock status:", error);
+            return "Error";  // Return "Error" if there's an issue fetching the status
+        });
+    }
+
+    async function sendLockRequest(action) {
+        const currentStatus = await getLockStatus();
+        const messageElement = document.getElementById("statusMessage");
+
+        // Determine the desired state based on the action
+        const desiredStatus = action === "unlock_door" ? "Unlocked" : "Locked";
+
+        // Check if the lock is already in the desired state
+        if (currentStatus === desiredStatus) {
+            messageElement.textContent = `The door is already ${desiredStatus.toLowerCase()}.`;
+            messageElement.classList.remove("error", "success");
+            messageElement.classList.add("info");
+            messageElement.style.display = 'block';
+            return;  // Exit the function without sending a new request
+        }
+
+        // If the lock is not in the desired state, proceed with the request
+        fetch(`/lock/${action}/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                messageElement.textContent = data.error;
+                messageElement.classList.remove("success", "info");
+                messageElement.classList.add("error");
+            } else {
+                messageElement.textContent = data.message;
+                messageElement.classList.remove("error", "info");
+                messageElement.classList.add("success");
+            }
+            messageElement.style.display = 'block';
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            messageElement.textContent = "An error occurred while processing your request.";
+            messageElement.classList.remove("success", "info");
+            messageElement.classList.add("error");
+            messageElement.style.display = 'block';
+        });
+    }
+</script>

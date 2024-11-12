@@ -1,19 +1,145 @@
-    <div class="login-container">
-        <h2>Login</h2>
-        {% if message %}
-            <p class="error-message">{{ message }}</p>
-        {% endif %}
-        <form method="POST" action="{% url 'account_login' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        <p>Don't have an account? Please ask the admin to create an account</p> <!-- Update the link as needed -->
-    </div>
+<style>
+    /* Reset margins and paddings for a consistent layout */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f6f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .login-container {
+        background-color: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+    }
+
+    .login-container h2 {
+        font-size: 1.8rem;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    .form-group label {
+        font-size: 1rem;
+        color: #555;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-top: 5px;
+    }
+
+    .form-group input:focus {
+        border-color: #2d3e50;
+        outline: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background-color: #2d3e50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #1d2b38;
+    }
+
+    .error-message {
+        color: #e74c3c;
+        background-color: #f9d6d5;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+
+    p {
+        font-size: 0.9rem;
+        color: #555;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .login-container {
+            padding: 30px;
+        }
+
+        .login-container h2 {
+            font-size: 1.5rem;
+        }
+
+        .form-group input, button {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .login-container {
+            padding: 20px;
+            width: 90%;
+        }
+
+        .login-container h2 {
+            font-size: 1.2rem;
+        }
+
+        .form-group input, button {
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <h2>Login</h2>
+    
+    {% if message %}
+        <p class="error-message">{{ message }}</p>
+    {% endif %}
+    
+    <form method="POST" action="{% url 'account_login' %}">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit">Login</button>
+    </form>
+    
+    <p>Don't have an account? Please ask the admin to create an account.</p>
+</div>
