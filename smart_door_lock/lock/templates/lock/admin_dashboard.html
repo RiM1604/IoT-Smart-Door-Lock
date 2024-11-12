@@ -1,0 +1,270 @@
+<h1>Admin Dashboard</h1>
+
+
+<h2 id="lock-status">Status: Loading...</h2>
+<button onclick="lockDoor()">Lock Door</button>
+<button onclick="unlockDoor()">Unlock Door</button>
+
+
+<h2>Access Logs</h2>
+<table id="access-logs-table">
+    <tr>
+        <th>User</th>
+        <th>Action</th>
+        <th>Timestamp</th>
+    </tr>
+    {% for log in access_logs %}
+    <tr>
+        <td>{{ log.user.username }}</td>
+        <td>{{ log.action }}</td>
+        <td>{{ log.timestamp }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="3" style="text-align: center;">No Access.</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Current Restrictions</h2>
+<table>
+    <tr>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Actions</th>
+    </tr>
+    {% for restriction in restrictions %}
+    <tr>
+        <td>
+            <input type="time" value="{{ restriction.restricted_start|date:"H:i" }}" id="start_{{ restriction.id }}" disabled>
+        </td>
+        <td>
+            <input type="time" value="{{ restriction.restricted_end|date:"H:i" }}" id="end_{{ restriction.id }}" disabled>
+        </td>
+        <td>
+            <button onclick="enableEdit({{ restriction.id }})" id="edit_btn_{{ restriction.id }}">Edit</button>
+            <button onclick="saveEdit({{ restriction.id }})" id="save_btn_{{ restriction.id }}" style="display:none;">Save</button>
+            <button onclick="removeRestriction({{ restriction.id }})" class="remove_btn">Remove</button>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="3" style="text-align: center;">No restrictions available.</td>
+    </tr>
+    {% endfor %}
+    
+</table>
+
+
+
+<button onclick="showAddForm()" class="button">Add New Restriction</button>
+
+<div id="addForm" style="display:none; margin-top: 20px;">
+    <label for="new_start">Start Time:</label>
+    <input type="time" id="new_start" required>
+    
+    <label for="new_end">End Time:</label>
+    <input type="time" id="new_end" required>
+    
+    <button onclick="addRestriction()">Add</button>
+    <button onclick="hideAddForm()">Cancel</button>
+</div>
+
+<div class="logout-section">
+    <a href="{% url 'account_logout' %}">Logout</a>
+</div>
+<div class="logout-section">
+    <a href="{% url 'register_user' %}">Register User</a>
+</div>
+
+
+<script>
+function showAddForm() {
+    document.getElementById("addForm").style.display = "block";
+}
+
+function hideAddForm() {
+    document.getElementById("addForm").style.display = "none";
+}
+
+function enableEdit(id) {
+    document.getElementById("start_" + id).disabled = false;
+    document.getElementById("end_" + id).disabled = false;
+    document.getElementById("edit_btn_" + id).style.display = "none";
+    document.getElementById("save_btn_" + id).style.display = "inline";
+}
+
+function addRestriction() {
+    const start = document.getElementById("new_start").value;
+    const end = document.getElementById("new_end").value;
+    
+    fetch('/lock/admin_dashboard/add/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ restricted_start: start, restricted_end: end })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Restriction added successfully!");
+            location.reload();  // Reload to show the new restriction
+        } else {
+            alert("Error adding restriction.");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+function saveEdit(id) {
+    const start = document.getElementById("start_" + id).value;
+    const end = document.getElementById("end_" + id).value;
+    
+    fetch(`/lock/admin_dashboard/edit/${id}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ restricted_start: start, restricted_end: end })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById("start_" + id).disabled = true;
+            document.getElementById("end_" + id).disabled = true;
+            document.getElementById("edit_btn_" + id).style.display = "inline";
+            document.getElementById("save_btn_" + id).style.display = "none";
+            alert("Restriction updated successfully!");
+        } else {
+            alert("Error updating restriction.");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+
+function removeRestriction(id) {
+    if (confirm("Are you sure you want to remove this restriction?")) {
+        fetch(`/lock/admin_dashboard/remove/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Restriction removed successfully!");
+                location.reload();
+            } else {
+                alert("Error removing restriction.");
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+
+
+function fetchLockStatus() {
+    fetch('/lock/status', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusElement = document.getElementById("lock-status");
+        statusElement.textContent = data.status=="Locked" ? "Status: Locked" : "Status: Unlocked";
+    })
+    .catch(error => console.error("Error fetching lock status:", error));
+}
+
+function lockDoor() {
+    fetch('/lock/lock_door/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            updateAccessLogs();
+            fetchLockStatus();
+        } else {
+            alert(data.error || "Error locking the door");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function unlockDoor() {
+    fetch('/lock/unlock_door/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            updateAccessLogs();
+            fetchLockStatus();
+        } else {
+            alert(data.error || "Error unlocking the door");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+
+function updateAccessLogs() {
+    fetch('/lock/access_logs', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const logsTable = document.getElementById("access-logs-table");
+        logsTable.innerHTML = `
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Timestamp</th>
+            </tr>
+        `;
+        data.access_logs.forEach(log => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${log.user.username}</td>
+                <td>${log.action}</td>
+                <td>${log.timestamp}</td>
+            `;
+            logsTable.appendChild(row);
+        });
+    })
+    .catch(error => console.error("Error fetching access logs:", error));
+}
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    fetchLockStatus();
+    {% comment %} updateAccessLogs(); // Load access logs when the page loads {% endcomment %}
+});
+</script>
