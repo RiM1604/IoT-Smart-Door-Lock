@@ -1,20 +1,14 @@
 # lock/views.py
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from .models import UserProfile, AccessLog, AdminSettings
+from .models import  AccessLog, AdminSettings
 from .forms import UserRegistrationForm
 from django.utils import timezone
-from datetime import time
 import paho.mqtt.client as mqtt
-import face_recognition
-import pickle
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth import logout
-from django.contrib.auth.decorators import user_passes_test
 from .models import AdminSettings
-from .forms import AdminSettingsForm
 import json
 from django.utils.dateparse import parse_time
 import requests
