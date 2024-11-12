@@ -36,7 +36,7 @@ def register_user(request):
                 user.set_password(form.cleaned_data["password"])
                 user.save()
                 
-                return redirect('account_login')
+                return redirect('')
             else:   
 
                 error_message = "\n".join([f"{field}: {', '.join(errors)}" for field, errors in form.errors.items()])
@@ -115,7 +115,7 @@ def unlock_door(request):
 @login_required
 def account_logout(request):
     logout(request)
-    return redirect('account_login')
+    return redirect('')
 
 
 @login_required
