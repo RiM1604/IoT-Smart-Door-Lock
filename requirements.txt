@@ -12,7 +12,7 @@ ckzg==2.0.0
 click==8.1.7
 cytoolz==0.12.3
 Django==5.1.2
-dlib==19.24.6
+# dlib==19.24.6
 eth-account==0.13.2
 eth-hash==0.7.0
 eth-keyfile==0.8.1
