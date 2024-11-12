@@ -18,22 +18,20 @@ from .forms import AdminSettingsForm
 import json
 from django.utils.dateparse import parse_time
 import requests
+from django.conf import settings
 
 
 
 
 # Adafruit IO MQTT configuration
-MQTT_USERNAME = 'ready1234'
-MQTT_KEY = 'aio_FUCC68wiiIjPIgjJMEo8fnys5Z1k'
-MQTT_FEED = f'{MQTT_USERNAME}/feeds/lock'
 client = mqtt.Client()
 
-client.username_pw_set(MQTT_USERNAME, MQTT_KEY)
+client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_KEY)
 client.connect("io.adafruit.com", 1883, 60)
 client.loop_start()
 
 def publish_lock_command(command):
-    client.publish(MQTT_FEED, command)
+    client.publish(settings.MQTT_FEED, command)
 
 def register_user(request):
     if request.user.is_superuser:
@@ -214,13 +212,13 @@ def add_restriction(request):
 @login_required
 def lock_status(request):
     # Adafruit IO URL for the lock feed
-    adafruit_url = f"https://io.adafruit.com/api/v2/{MQTT_USERNAME}/feeds/lock/data/last"
+    adafruit_url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/lock/data/last"
 
     # Fetch the latest feed data from Adafruit IO
     try:
         response = requests.get(
             adafruit_url,
-            headers={"X-AIO-Key": MQTT_KEY}
+            headers={"X-AIO-Key": settings.MQTT_KEY}
         )
         response.raise_for_status()  # Raise an error for bad responses
 
@@ -246,8 +244,8 @@ def lock_status(request):
 @login_required
 def rfid_access(request):
     # Fetch the latest messages from Adafruit IO's rfidaccess feed
-    url = f"https://io.adafruit.com/api/v2/{MQTT_USERNAME}/feeds/rfidaccess/data"
-    headers = {"X-AIO-Key": MQTT_KEY}
+    url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/rfidaccess/data"
+    headers = {"X-AIO-Key": settings.MQTT_KEY}
     response = requests.get(url, headers=headers)
     
     rfid_data = response.json() if response.status_code == 200 else []

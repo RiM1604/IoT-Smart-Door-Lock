@@ -112,7 +112,7 @@
         {% if rfid_data %}
             {% for entry in rfid_data %}
                 <div class="entry">
-                    <p><strong>Time:</strong> {{ entry.created_at }}<br><strong>Data:</strong> {{ entry.value }}</p>
+                    <p><strong>Time:</strong> {{ entry.created_at }}<br><strong>Data:</strong> RFID Tag{{ entry.value }} used for Access</p>
                 </div>
             {% endfor %}
         {% else %}

@@ -28,12 +28,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-rb+epn&r%(%++#69!9n(3ts1zu%g13tt67)41%+$t3aa9o(y74"
+
+SECRET_KEY=os.getenv('SECRET_KEY')
+SECRET_KEY=os.environ.get('SECRET_KEY')
+
+MQTT_USERNAME = os.getenv("MQTT_USERNAME")
+MQTT_KEY = os.getenv("MQTT_KEY")
+MQTT_FEED = os.getenv("MQTT_FEED")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost','127.0.0.1']
 
 
 # Application definition
