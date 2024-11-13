@@ -112,7 +112,14 @@
         {% if rfid_data %}
             {% for entry in rfid_data %}
                 <div class="entry">
-                    <p><strong>Time:</strong> {{ entry.created_at }}<br><strong>Data:</strong> RFID Tag{{ entry.value }} used for Access</p>
+                    <p><strong>Time:</strong> 
+                        {% if entry.created_at %}
+                            {{ entry.created_at|date:"M. d, Y, h:i a" }}
+                        {% else %}
+                            No timestamp available
+                        {% endif %}
+                    </p>
+                    <p><strong>Data:</strong> RFID Tag{{ entry.value }} used for Access</p>
                 </div>
             {% endfor %}
         {% else %}

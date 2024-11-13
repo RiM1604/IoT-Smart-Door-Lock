@@ -13,7 +13,8 @@ import json
 from django.utils.dateparse import parse_time
 import requests
 from django.conf import settings
-
+from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 
 
 
@@ -235,6 +236,7 @@ def lock_status(request):
 
     return JsonResponse({"status": status})
 
+
 @login_required
 def rfid_access(request):
     # Fetch the latest messages from Adafruit IO's rfidaccess feed
@@ -243,6 +245,24 @@ def rfid_access(request):
     response = requests.get(url, headers=headers)
     
     rfid_data = response.json() if response.status_code == 200 else []
+
+    # Convert the UTC 'created_at' timestamps to local timezone if available
+    for entry in rfid_data:
+        if 'created_at' in entry:
+            try:
+                # Convert the string 'created_at' to a datetime object
+                utc_time = datetime.strptime(entry['created_at'], "%Y-%m-%dT%H:%M:%SZ")
+                
+                # Make it timezone-aware using the correct UTC timezone
+                utc_time = utc_time.replace(tzinfo=dt_timezone.utc)
+                
+                # Convert the UTC datetime to local time
+                local_time = utc_time.astimezone(timezone.get_current_timezone())
+                entry['created_at'] = local_time  # Update the entry with the local time
+            except Exception as e:
+                print(f"Error processing timestamp: {e}")
+                # If there's an error, you could choose to keep it as is or set to None
+                entry['created_at'] = None
     
     # Render the page and pass the fetched data to the template
     return render(request, 'lock/rfid_access.html', {
