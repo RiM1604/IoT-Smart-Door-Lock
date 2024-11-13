@@ -172,7 +172,7 @@ h2 {
 <script>
     // Fetches the current lock status from Adafruit IO
     function getLockStatus() {
-        return fetch(`/lock/status/`, {
+        return fetch(`/status/`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -203,7 +203,7 @@ h2 {
         }
 
         // If the lock is not in the desired state, proceed with the request
-        fetch(`/lock/${action}/`, {
+        fetch(`/${action}/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

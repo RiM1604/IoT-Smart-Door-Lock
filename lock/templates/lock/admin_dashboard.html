@@ -350,7 +350,7 @@ function addRestriction() {
     const start = document.getElementById("new_start").value;
     const end = document.getElementById("new_end").value;
     
-    fetch('/lock/admin_dashboard/add/', {
+    fetch('/admin_dashboard/add/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -375,7 +375,7 @@ function saveEdit(id) {
     const start = document.getElementById("start_" + id).value;
     const end = document.getElementById("end_" + id).value;
     
-    fetch(`/lock/admin_dashboard/edit/${id}/`, {
+    fetch(`/admin_dashboard/edit/${id}/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ function saveEdit(id) {
 
 function removeRestriction(id) {
     if (confirm("Are you sure you want to remove this restriction?")) {
-        fetch(`/lock/admin_dashboard/remove/${id}/`, {
+        fetch(`/admin_dashboard/remove/${id}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -425,7 +425,7 @@ function removeRestriction(id) {
 
 
 function fetchLockStatus() {
-    fetch('/lock/status', {
+    fetch('/status/', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -441,7 +441,7 @@ function fetchLockStatus() {
 }
 
 function lockDoor() {
-    fetch('/lock/lock_door/', {
+    fetch('/lock_door/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -461,7 +461,7 @@ function lockDoor() {
 }
 
 function unlockDoor() {
-    fetch('/lock/unlock_door/', {
+    fetch('/unlock_door/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -483,7 +483,7 @@ function unlockDoor() {
 
 
 function updateAccessLogs() {
-    fetch('/lock/access_logs', {
+    fetch('/access_logs', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

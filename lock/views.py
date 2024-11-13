@@ -41,8 +41,7 @@ def register_user(request):
             else:   
 
                 error_message = "\n".join([f"{field}: {', '.join(errors)}" for field, errors in form.errors.items()])
-                message = "Form information not valid!"
-                return render(request, 'lock/user_login.html', {'message':error_message})
+                return render(request, 'lock/register_user.html', {'message':error_message})
 
         else:
             form = UserRegistrationForm()
@@ -204,37 +203,64 @@ def add_restriction(request):
 
 
 
+
 @login_required
 def lock_status(request):
-    # Adafruit IO URL for the lock feed
-    adafruit_url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/lock/data/last"
-
-    # Fetch the latest feed data from Adafruit IO
+    # Adafruit IO URLs for the lock and RFID feeds
+    adafruit_lock_url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/lock/data/last"
+    adafruit_rfid_url = f"https://io.adafruit.com/api/v2/{settings.MQTT_USERNAME}/feeds/rfidaccess/data/last"
+    
     try:
-        response = requests.get(
-            adafruit_url,
+        # Fetch the latest lock feed data from Adafruit IO
+        lock_response = requests.get(
+            adafruit_lock_url,
             headers={"X-AIO-Key": settings.MQTT_KEY}
         )
-        response.raise_for_status()  # Raise an error for bad responses
+        lock_response.raise_for_status()
+        lock_feed_data = lock_response.json()
 
-        # Parse the response JSON
-        feed_data = response.json()
-        feed_value = feed_data.get("value", "").upper()  # Expecting "ON" or "OFF"
+        # Extract the timestamp and value from the lock feed
+        lock_value = lock_feed_data.get("value", "").upper()  # Expecting "ON" or "OFF"
+        lock_timestamp_str = lock_feed_data.get("created_at")
+        lock_timestamp = None
+        if lock_timestamp_str:
+            lock_timestamp = datetime.strptime(lock_timestamp_str, "%Y-%m-%dT%H:%M:%SZ")
 
-        # Determine lock status based on the feed value
-        if feed_value == "ON":
-            status = "Locked"
-        elif feed_value == "OFF":
-            status = "Unlocked"
+        # Fetch the latest RFID feed data from Adafruit IO
+        rfid_response = requests.get(
+            adafruit_rfid_url,
+            headers={"X-AIO-Key": settings.MQTT_KEY}
+        )
+        rfid_response.raise_for_status()
+        rfid_feed_data = rfid_response.json()
+
+        # Directly access the latest RFID entry
+        rfid_timestamp_str = rfid_feed_data.get("created_at")
+        rfid_timestamp = None
+        if rfid_timestamp_str:
+            rfid_timestamp = datetime.strptime(rfid_timestamp_str, "%Y-%m-%dT%H:%M:%SZ")
+
+        # Determine lock status based on the RFID timestamp comparison with lock timestamp
+        if rfid_timestamp and rfid_timestamp > lock_timestamp:
+            status = "Locked"  # If RFID timestamp is later, we assume the lock is locked
         else:
-            status = "Unknown"  # Default when the feed value is unrecognized
+            # Otherwise, check the lock feed status
+            if lock_value == "ON":
+                status = "Locked"
+            elif lock_value == "OFF":
+                status = "Unlocked"
+            else:
+                status = "Unknown"  # Handle unknown values if needed
 
     except requests.RequestException as e:
         # Handle any request-related errors
         print("Error fetching data from Adafruit IO:", e)
-        status = "Error"  # Indicate an error status
+        status = "Error"  # Indicate error status
 
     return JsonResponse({"status": status})
+
+
+
 
 
 @login_required
